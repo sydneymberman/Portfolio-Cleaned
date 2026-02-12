@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import embodyLogo from "figma:asset/382fb7e43884845be7f31dd981c53da8724aac62.png";
+import embodyImage from "figma:asset/5ae3c122e1f2e7f4381ce2d7577a200629073671.png";
 
 const projects = [
   {
@@ -18,7 +19,7 @@ const projects = [
     title: "Embody",
     description: "AI-powered health monitoring system for PCOS. Hydrogel patches collect biomarkers while the app provides personalized cycle tracking, symptom management, and predictive insights",
     category: "Product Design, UX Design",
-    image: "https://images.unsplash.com/photo-1658274474930-bb27a64022c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb2RpbmclMjBsYXB0b3AlMjBzY3JlZW58ZW58MXx8fHwxNzU5NzIxMjc3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: embodyImage,
     year: "2025",
     link: "/projects/embody",
   },
@@ -92,9 +93,13 @@ export function WorkSection() {
                 className="space-y-6 cursor-grab active:cursor-grabbing"
                 onClick={() => navigate(projects[currentIndex].link)}
               >
-                <div className="group relative aspect-[4/3] bg-gradient-to-br from-pink-100/80 to-pink-200/80 dark:from-zinc-900/80 dark:to-zinc-800/80 backdrop-blur-xl overflow-hidden rounded-2xl shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/40 dark:border-white/10">
+                <div className={`group relative aspect-[4/3] backdrop-blur-xl overflow-hidden rounded-2xl shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/40 dark:border-white/10 ${
+                  projects[currentIndex].title === "Embody" 
+                    ? "bg-[#FAFAFA]" 
+                    : "bg-gradient-to-br from-pink-100/80 to-pink-200/80 dark:from-zinc-900/80 dark:to-zinc-800/80"
+                }`}>
                   {/* Glow effect on dark mode */}
-                  <div className="absolute inset-0 opacity-0 dark:opacity-100 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-10">
+                  <div className="absolute inset-0 opacity-0 dark:opacity-100 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
                     <div className="absolute inset-0 bg-gradient-to-t from-pink-500/10 to-transparent" />
                   </div>
                   
@@ -189,11 +194,15 @@ export function WorkSection() {
                   !isEven ? "lg:grid-flow-dense" : ""
                 }`}
               >
-                <div className={`group relative aspect-[4/3] bg-gradient-to-br from-pink-100/80 to-pink-200/80 dark:from-zinc-900/80 dark:to-zinc-800/80 backdrop-blur-xl overflow-hidden rounded-2xl shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/40 dark:border-white/10 hover:scale-105 transition-transform duration-500 ${
+                <div className={`group relative aspect-[4/3] backdrop-blur-xl overflow-hidden rounded-2xl shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/40 dark:border-white/10 hover:scale-105 transition-transform duration-500 ${
                   !isEven ? "lg:col-start-2" : ""
+                } ${
+                  project.title === "Embody" 
+                    ? "bg-[#FAFAFA]" 
+                    : "bg-gradient-to-br from-pink-100/80 to-pink-200/80 dark:from-zinc-900/80 dark:to-zinc-800/80"
                 }`}>
                   {/* Glow effect on dark mode */}
-                  <div className="absolute inset-0 opacity-0 dark:opacity-100 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-10">
+                  <div className="absolute inset-0 opacity-0 dark:opacity-100 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
                     <div className="absolute inset-0 bg-gradient-to-t from-pink-500/10 to-transparent" />
                   </div>
                   
