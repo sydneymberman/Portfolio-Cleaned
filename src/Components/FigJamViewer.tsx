@@ -2,14 +2,26 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Maximize2, Minimize2, ExternalLink, X, ChevronDown } from "lucide-react";
 
-/* ── Page configuration ──
-   Update these with your actual FigJam page names and node-ids.
-   To find a node-id: open the page in Figma, look at the URL for "node-id=XXX-XXX"
-*/
-const FIGJAM_FILE_KEY = "Vfg6IMAMjtQoiZEDECwic2";
-const FIGJAM_FILE_NAME = "Planning---Concepting---Research";
+/* ── Types ── */
+export interface FigJamPage {
+  name: string;
+  nodeId: string;
+}
 
-const PAGES = [
+interface FigJamViewerProps {
+  className?: string;
+  fileKey: string;
+  fileName: string;
+  pages: FigJamPage[];
+  accentColor?: string;
+  accentColorLight?: string;
+  accentBgAlpha?: string;
+}
+
+/* ── Default Embody configuration (backward compat) ── */
+const EMBODY_FILE_KEY = "Vfg6IMAMjtQoiZEDECwic2";
+const EMBODY_FILE_NAME = "Planning---Concepting---Research";
+const EMBODY_PAGES: FigJamPage[] = [
   { name: "Starting Point",        nodeId: "654-1711" },
   { name: "Consequences",          nodeId: "327-1115" },
   { name: "Hardware",              nodeId: "296-1205" },
@@ -18,14 +30,6 @@ const PAGES = [
   { name: "Packaging Prototype",   nodeId: "540-1318" },
   { name: "Service Model Canvas",  nodeId: "447-198" },
 ];
-
-function buildEmbedUrl(nodeId: string) {
-  return `https://www.figma.com/embed?embed_host=portfolio&url=https://www.figma.com/board/${FIGJAM_FILE_KEY}/${FIGJAM_FILE_NAME}?node-id=${nodeId}`;
-}
-
-function buildFigmaUrl(nodeId: string) {
-  return `https://www.figma.com/board/${FIGJAM_FILE_KEY}/${FIGJAM_FILE_NAME}?node-id=${nodeId}`;
-}
 
 /* ── Shared styles ── */
 const btnStyle: React.CSSProperties = {
@@ -42,7 +46,15 @@ const btnStyle: React.CSSProperties = {
 };
 
 /* ── Component ── */
-export function FigJamViewer({ className = "" }: { className?: string }) {
+export function FigJamViewer({
+  className = "",
+  fileKey = EMBODY_FILE_KEY,
+  fileName = EMBODY_FILE_NAME,
+  pages = EMBODY_PAGES,
+  accentColor = "#a259ff",
+  accentColorLight = "#c9a0ff",
+  accentBgAlpha = "rgba(162,89,255,0.15)",
+}: FigJamViewerProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,7 +62,14 @@ export function FigJamViewer({ className = "" }: { className?: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const page = PAGES[currentPage];
+  const page = pages[currentPage];
+
+  const buildEmbedUrl = (nodeId: string) =>
+    `https://www.figma.com/embed?embed_host=portfolio&url=https://www.figma.com/board/${fileKey}/${fileName}?node-id=${nodeId}`;
+
+  const buildFigmaUrl = (nodeId: string) =>
+    `https://www.figma.com/board/${fileKey}/${fileName}?node-id=${nodeId}`;
+
   const embedUrl = buildEmbedUrl(page.nodeId);
   const figmaUrl = buildFigmaUrl(page.nodeId);
 
@@ -235,7 +254,7 @@ export function FigJamViewer({ className = "" }: { className?: string }) {
                     <div style={{ padding: "6px 10px 4px", fontSize: 11, color: "#666", textTransform: "uppercase", letterSpacing: 1 }}>
                       Pages
                     </div>
-                    {PAGES.map((p, i) => (
+                    {pages.map((p, i) => (
                       <button
                         key={p.nodeId}
                         onClick={() => switchPage(i)}
@@ -245,10 +264,10 @@ export function FigJamViewer({ className = "" }: { className?: string }) {
                           gap: 8,
                           width: "100%",
                           padding: "8px 10px",
-                          background: i === currentPage ? "rgba(162,89,255,0.15)" : "none",
+                          background: i === currentPage ? accentBgAlpha : "none",
                           border: "none",
                           borderRadius: 6,
-                          color: i === currentPage ? "#c9a0ff" : "#ccc",
+                          color: i === currentPage ? accentColorLight : "#ccc",
                           fontSize: 13,
                           cursor: "pointer",
                           textAlign: "left",
@@ -265,7 +284,7 @@ export function FigJamViewer({ className = "" }: { className?: string }) {
                           width: 6,
                           height: 6,
                           borderRadius: "50%",
-                          background: i === currentPage ? "#a259ff" : "#555",
+                          background: i === currentPage ? accentColor : "#555",
                           flexShrink: 0,
                         }} />
                         {p.name}
@@ -295,7 +314,7 @@ export function FigJamViewer({ className = "" }: { className?: string }) {
           <div className="flex items-center gap-1">
             {/* Page counter */}
             <span style={{ fontSize: 12, color: "#666", marginRight: 4 }}>
-              {currentPage + 1}/{PAGES.length}
+              {currentPage + 1}/{pages.length}
             </span>
             <button onClick={openInFigma} title="Open in Figma" aria-label="Open in Figma" style={btnStyle}>
               <ExternalLink size={16} />
@@ -350,7 +369,7 @@ export function FigJamViewer({ className = "" }: { className?: string }) {
                     width: 32,
                     height: 32,
                     border: "3px solid #333",
-                    borderTopColor: "#a259ff",
+                    borderTopColor: accentColor,
                     borderRadius: "50%",
                     animation: "fjv-spin 0.7s linear infinite",
                   }}
