@@ -60,6 +60,7 @@ import homepageRotato from "../assets/HomepageRotato.png";
 import profileRotato from "../assets/ProfileRotato.png";
 import screenOne from "../assets/ScreenOne.png";
 import lookbook from "../assets/Lookbook.png";
+import { EmbodyVisionVideo } from "../assets/EmbodyVisionVideo";
 
 export function CaseStudyEmbody() {
   const navigate = useNavigate();
@@ -371,6 +372,38 @@ export function CaseStudyEmbody() {
             </motion.div>
           </div>
         </section>
+
+              {/* Vision Video */}
+        <section className="py-32 px-6 lg:px-12 bg-gradient-to-br from-pink-500/5 via-background to-background">
+          <div className="max-w-5xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2
+                className="text-4xl md:text-5xl tracking-tighter mb-8 text-foreground"
+                style={{ fontWeight: 600 }}
+              >
+                Vision Video
+              </h2>
+              <p className="text-xl text-foreground/80 leading-relaxed mb-12">
+                A glimpse into how Embody fits into the daily lives
+                of people managing PCOS.
+              </p>
+              <div className="relative rounded-2xl overflow-hidden border border-pink-500/15 bg-card/80 backdrop-blur-lg aspect-video">
+                <iframe
+                  className="w-full h-full"
+                  src="https://www.youtube.com/embed/j2qdmGDrHmM"
+                  title="Embody Vision Video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </motion.div>
+          </div> 
+     </section>
 
         {/* Why Embody */}
         <section className="py-32 px-6 lg:px-12 bg-gradient-to-br from-pink-500/5 via-background to-background">
