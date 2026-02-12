@@ -1,2385 +1,421 @@
-import { motion } from "motion/react";
-import { Navigation } from "./Navigation";
-import { ArrowLeft, ChevronDown } from "lucide-react";
-import { useNavigate } from "react-router";
-import { useState } from "react";
-import { MobileCarousel } from "./MobileCarousel";
-import Logo from "../imports/Logo";
-import heroImage from "figma:asset/1a1c438a0f4c04d8941e484906b7065a007af225.png";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Maximize2, Minimize2, ExternalLink, X, ChevronDown } from "lucide-react";
 
-export function CaseStudyFitify() {
-  const navigate = useNavigate();
-  const [openAccordion, setOpenAccordion] = useState<
-    number | null
-  >(null);
+/* ── Types ── */
+export interface FigJamPage {
+  name: string;
+  nodeId: string;
+}
+
+interface FigJamViewerProps {
+  className?: string;
+  fileKey: string;
+  fileName: string;
+  pages: FigJamPage[];
+  accentColor?: string;
+  accentColorLight?: string;
+  accentBgAlpha?: string;
+}
+
+/* ── Default Embody configuration (backward compat) ── */
+const EMBODY_FILE_KEY = "Vfg6IMAMjtQoiZEDECwic2";
+const EMBODY_FILE_NAME = "Planning---Concepting---Research";
+const EMBODY_PAGES: FigJamPage[] = [
+  { name: "Starting Point",        nodeId: "654-1711" },
+  { name: "Consequences",          nodeId: "327-1115" },
+  { name: "Hardware",              nodeId: "296-1205" },
+  { name: "Research",              nodeId: "296-976" },
+  { name: "USP Notes",             nodeId: "423-1170" },
+  { name: "Packaging Prototype",   nodeId: "540-1318" },
+  { name: "Service Model Canvas",  nodeId: "447-198" },
+];
+
+/* ── Shared styles ── */
+const btnStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: 32,
+  height: 32,
+  borderRadius: 8,
+  border: "none",
+  background: "none",
+  color: "#999",
+  cursor: "pointer",
+};
+
+/* ── Component ── */
+export function FigJamViewer({
+  className = "",
+  fileKey = EMBODY_FILE_KEY,
+  fileName = EMBODY_FILE_NAME,
+  pages = EMBODY_PAGES,
+  accentColor = "#a259ff",
+  accentColorLight = "#c9a0ff",
+  accentBgAlpha = "rgba(162,89,255,0.15)",
+}: FigJamViewerProps) {
+  const [currentPage, setCurrentPage] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const page = pages[currentPage];
+
+  const buildEmbedUrl = (nodeId: string) =>
+    `https://www.figma.com/embed?embed_host=portfolio&url=https://www.figma.com/board/${fileKey}/${fileName}?node-id=${nodeId}`;
+
+  const buildFigmaUrl = (nodeId: string) =>
+    `https://www.figma.com/board/${fileKey}/${fileName}?node-id=${nodeId}`;
+
+  const embedUrl = buildEmbedUrl(page.nodeId);
+  const figmaUrl = buildFigmaUrl(page.nodeId);
+
+  const handleLoad = useCallback(() => setIsLoading(false), []);
+  const toggleExpand = useCallback(() => setIsExpanded((p) => !p), []);
+  const openInFigma = useCallback(
+    () => window.open(figmaUrl, "_blank", "noopener,noreferrer"),
+    [figmaUrl]
+  );
+
+  const switchPage = useCallback((index: number) => {
+    if (index === currentPage) {
+      setIsDropdownOpen(false);
+      return;
+    }
+    setCurrentPage(index);
+    setIsLoading(true);
+    setIsDropdownOpen(false);
+  }, [currentPage]);
+
+  /* Close dropdown on outside click */
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [isDropdownOpen]);
+
+  /* Escape to close */
+  useEffect(() => {
+    if (!isExpanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsDropdownOpen(false);
+        setIsExpanded(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isExpanded]);
+
+  /* Lock scroll when expanded */
+  useEffect(() => {
+    document.body.style.overflow = isExpanded ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isExpanded]);
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-500">
-      <Navigation />
+    <>
+      {/* Backdrop */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            key="fjv-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => { setIsDropdownOpen(false); toggleExpand(); }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.6)",
+              backdropFilter: "blur(4px)",
+              WebkitBackdropFilter: "blur(4px)",
+              zIndex: 999,
+            }}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Lava Lamp Effect - Animated gradient orbs in background */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Orb 1 */}
-        <motion.div
-          className="absolute top-[10%] left-[15%] w-[500px] h-[500px] rounded-full"
-          animate={{
-            x: [0, 150, -100, 80, 0],
-            y: [0, -100, 150, -70, 0],
-            scale: [1, 1.3, 0.8, 1.2, 1],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+      {/* Viewer window */}
+      <div
+        className={className}
+        style={
+          isExpanded
+            ? {
+                position: "fixed",
+                inset: "20px",
+                zIndex: 1000,
+                borderRadius: "16px",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                background: "#1e1e1e",
+                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: "0 12px 48px rgba(0,0,0,0.5)",
+              }
+            : {
+                position: "relative",
+                width: "100%",
+                borderRadius: "16px",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                background: "#1e1e1e",
+                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+              }
+        }
+      >
+        {/* ── Title bar ── */}
+        <div
+          className="flex items-center justify-between"
           style={{
-            background:
-              "radial-gradient(circle, color-mix(in srgb, #3360EC 30%, transparent) 0%, transparent 70%)",
-            filter: "blur(90px)",
+            padding: "10px 16px",
+            background: "rgba(44,44,44,0.8)",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            flexShrink: 0,
           }}
-        />
-        {/* Orb 2 */}
-        <motion.div
-          className="absolute top-[60%] right-[20%] w-[450px] h-[450px] rounded-full"
-          animate={{
-            x: [0, -120, 100, -80, 0],
-            y: [0, 120, -140, 80, 0],
-            scale: [1, 0.9, 1.4, 0.95, 1],
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          style={{
-            background:
-              "radial-gradient(circle, color-mix(in srgb, #3360EC 25%, transparent) 0%, transparent 70%)",
-            filter: "blur(100px)",
-          }}
-        />
-        {/* Orb 3 */}
-        <motion.div
-          className="absolute bottom-[15%] left-[25%] w-[400px] h-[400px] rounded-full"
-          animate={{
-            x: [0, 180, -120, 90, 0],
-            y: [0, -130, 110, -90, 0],
-            scale: [1, 1.1, 0.85, 1.25, 1],
-          }}
-          transition={{
-            duration: 28,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          style={{
-            background:
-              "radial-gradient(circle, color-mix(in srgb, #3360EC 20%, transparent) 0%, transparent 70%)",
-            filter: "blur(95px)",
-          }}
-        />
-        {/* Orb 4 */}
-        <motion.div
-          className="absolute top-[35%] right-[10%] w-[350px] h-[350px] rounded-full"
-          animate={{
-            x: [0, -90, 110, -70, 0],
-            y: [0, 100, -120, 90, 0],
-            scale: [1, 1.2, 0.9, 1.15, 1],
-          }}
-          transition={{
-            duration: 32,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          style={{
-            background:
-              "radial-gradient(circle, color-mix(in srgb, #3360EC 22%, transparent) 0%, transparent 70%)",
-            filter: "blur(85px)",
-          }}
-        />
-        {/* Orb 5 */}
-        <motion.div
-          className="absolute bottom-[40%] right-[35%] w-[380px] h-[380px] rounded-full"
-          animate={{
-            x: [0, 130, -110, 95, 0],
-            y: [0, -95, 125, -80, 0],
-            scale: [1, 0.95, 1.25, 1.05, 1],
-          }}
-          transition={{
-            duration: 27,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          style={{
-            background:
-              "radial-gradient(circle, color-mix(in srgb, #3360EC 18%, transparent) 0%, transparent 70%)",
-            filter: "blur(88px)",
-          }}
-        />
-      </div>
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Figma logo */}
+            <svg width="16" height="16" viewBox="0 0 38 57" fill="none" className="flex-shrink-0">
+              <path d="M19 28.5C19 23.2533 23.2533 19 28.5 19C33.7467 19 38 23.2533 38 28.5C38 33.7467 33.7467 38 28.5 38C23.2533 38 19 33.7467 19 28.5Z" fill="#1ABCFE"/>
+              <path d="M0 47.5C0 42.2533 4.25329 38 9.5 38H19V47.5C19 52.7467 14.7467 57 9.5 57C4.25329 57 0 52.7467 0 47.5Z" fill="#0ACF83"/>
+              <path d="M19 0V19H28.5C33.7467 19 38 14.7467 38 9.5C38 4.25329 33.7467 0 28.5 0H19Z" fill="#FF7262"/>
+              <path d="M0 9.5C0 14.7467 4.25329 19 9.5 19H19V0H9.5C4.25329 0 0 4.25329 0 9.5Z" fill="#F24E1E"/>
+              <path d="M0 28.5C0 33.7467 4.25329 38 9.5 38H19V19H9.5C4.25329 19 0 23.2533 0 28.5Z" fill="#A259FF"/>
+            </svg>
 
-      <div className="relative z-10">
-        {/* Hero Section */}
-        <section className="min-h-screen flex items-center justify-center px-6 lg:px-12 pt-32">
-          <div className="max-w-7xl mx-auto w-full">
-            <motion.button
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              onClick={() => navigate(-1)}
-              className="mb-8 flex items-center gap-2 text-muted-foreground hover:text-[#3360EC] transition-colors"
-            >
-              <ArrowLeft size={20} />
-              <span>Back</span>
-            </motion.button>
-
-            <div className="max-w-5xl mx-auto">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="text-center mb-12"
-              >
-                <div className="inline-block px-4 py-2 bg-[#3360EC]/10 text-[#3360EC] rounded-full text-sm mb-12 border border-[#3360EC]/20">
-                  UXDG 101 • UX Foundations • 2024
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="relative mb-12 lg:mb-0"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-[#3360EC]/20 to-transparent blur-3xl -z-10" />
-                <div className="relative w-full max-w-full lg:max-w-4xl mx-auto overflow-hidden rounded-3xl">
-                  <img
-                    src={heroImage}
-                    alt="Fitify mobile app mockups"
-                    className="w-full h-full object-cover"
-                  />
-                  {/* Logo overlay positioned on the left */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                    className="absolute top-1/2 left-8 md:left-16 lg:left-20 -translate-y-1/2 z-10"
-                  >
-                    <div className="w-40 md:w-56 lg:w-64">
-                      <Logo />
-                    </div>
-                  </motion.div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="text-center relative z-10 mt-12"
-              >
-                <p className="text-2xl text-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-                  A unique e-commerce platform transforming the
-                  online shopping experience using AI-powered
-                  virtual try-on technology
-                </p>
-                <div className="flex flex-wrap gap-3 justify-center">
-                  {[
-                    "UX Design",
-                    "Mobile App",
-                    "AI",
-                    "E-commerce",
-                  ].map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-4 py-2 text-sm bg-card/70 backdrop-blur-lg rounded-full border border-border text-foreground"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-
-        {/* Overview Section */}
-        <section className="py-32 px-6 lg:px-12">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="grid md:grid-cols-4 gap-8 mb-20"
-            >
-              <div className="bg-card/70 backdrop-blur-lg rounded-2xl border border-border p-8">
-                <h3
-                  className="text-sm uppercase tracking-widest text-blue-500 mb-4"
-                  style={{ fontWeight: 600 }}
-                >
-                  Role
-                </h3>
-                <p className="text-lg text-foreground">
-                  UX/UI Designer
-                </p>
-              </div>
-              <div className="bg-card/70 backdrop-blur-lg rounded-2xl border border-border p-8">
-                <h3
-                  className="text-sm uppercase tracking-widest text-blue-500 mb-4"
-                  style={{ fontWeight: 600 }}
-                >
-                  Timeline
-                </h3>
-                <p className="text-lg text-foreground">
-                  10 weeks (2024)
-                </p>
-              </div>
-              <div className="bg-card/70 backdrop-blur-lg rounded-2xl border border-border p-8">
-                <h3
-                  className="text-sm uppercase tracking-widest text-blue-500 mb-4"
-                  style={{ fontWeight: 600 }}
-                >
-                  Platform
-                </h3>
-                <p className="text-lg text-foreground">
-                  iOS Mobile App
-                </p>
-              </div>
-              <div className="bg-card/70 backdrop-blur-lg rounded-2xl border border-border p-8">
-                <h3
-                  className="text-sm uppercase tracking-widest text-blue-500 mb-4"
-                  style={{ fontWeight: 600 }}
-                >
-                  Team
-                </h3>
-                <div className="text-lg text-foreground space-y-1">
-                  <div>Steven Vasil,</div>
-                  <div>Nicky Zuino,</div>
-                  <div>Joy Carter,</div>
-                  <div>Sydney Berman</div>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <h2
-                className="text-4xl md:text-5xl tracking-tighter mb-8 text-foreground"
-                style={{ fontWeight: 600 }}
-              >
-                Overview
-              </h2>
-              <p className="text-xl text-foreground/80 leading-relaxed mb-6">
-                Fitify is a{" "}
-                <span className="text-blue-500 font-semibold">
-                  unique e-commerce platform
-                </span>{" "}
-                transforming the online shopping experience using{" "}
-                <span className="text-blue-500 font-semibold">
-                  AI image generation
-                </span>
-                . Users can virtually try on clothing from top
-                brands, see how items look on their body type, and
-                shop with confidence — all from their phone.
-              </p>
-              <p className="text-xl text-foreground/80 leading-relaxed mb-6">
-                The app bridges the gap between browsing and buying
-                by letting users upload a photo and instantly
-                visualize how garments fit, reducing hesitation and
-                eliminating the guesswork of online fashion
-                shopping.
-              </p>
-              <p className="text-xl text-foreground/80 leading-relaxed">
-                With{" "}
-                <span className="text-blue-500 font-semibold">
-                  30–40% of online clothing
-                </span>{" "}
-                purchases returned due to sizing issues, and{" "}
-                <span className="text-blue-500 font-semibold">
-                  70% of those returns
-                </span>{" "}
-                attributed to poor fit, Fitify addresses a critical
-                pain point in the fashion e-commerce industry.
-              </p>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Prototype Video */}
-        <section className="py-32 px-6 lg:px-12 bg-gradient-to-br from-blue-500/5 via-background to-background">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2
-                className="text-4xl md:text-5xl tracking-tighter mb-8 text-foreground"
-                style={{ fontWeight: 600 }}
-              >
-                Prototype Video
-              </h2>
-              <p className="text-xl text-foreground/80 leading-relaxed mb-12">
-                A walkthrough of the Fitify experience — from
-                onboarding to virtual try-on to checkout.
-              </p>
-              <div className="relative rounded-2xl overflow-hidden border border-[#3360EC]/15 bg-card/80 backdrop-blur-lg aspect-video">
-                <iframe
-                  className="w-full h-full"
-                  src="https://www.youtube.com/embed/jyu7Qg53uh0"
-                  title="Fitify Prototype Walkthrough"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Why Fitify? */}
-        <section className="py-32 px-6 lg:px-12 bg-gradient-to-br from-blue-500/5 via-background to-background">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2
-                className="text-4xl md:text-5xl tracking-tighter mb-8 text-foreground flex items-center gap-3"
-                style={{ fontWeight: 600 }}
-              >
-                Why{" "}
-                <span className="inline-block" style={{ width: '140px', height: '56px' }}>
-                  <Logo />
-                </span>
-                ?
-              </h2>
-              <p className="text-xl text-foreground/80 leading-relaxed mb-12">
-                Online fashion shopping is broken. Customers can't
-                see how clothes will actually look on them, leading
-                to frustration, wasted money, and mountains of
-                returns.
-              </p>
-
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-5xl text-blue-500 mb-4"
-                    style={{ fontWeight: 700 }}
-                  >
-                    $817B
-                  </div>
-                  <h3 className="text-xl mb-3 text-foreground font-semibold">
-                    Global Market
-                  </h3>
-                  <p className="text-muted-foreground">
-                    The online fashion market continues to grow,
-                    yet the shopping experience remains fundamentally
-                    flawed.
-                  </p>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-5xl text-blue-500 mb-4 whitespace-nowrap text-center"
-                    style={{ fontWeight: 700 }}
-                  >
-                    30-40%
-                  </div>
-                  <h3 className="text-xl mb-3 text-foreground font-semibold">
-                    Return Rate
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Average return rate for online clothing —
-                    costing retailers billions annually in shipping
-                    and restocking.
-                  </p>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-5xl text-blue-500 mb-4"
-                    style={{ fontWeight: 700 }}
-                  >
-                    70%
-                  </div>
-                  <h3 className="text-xl mb-3 text-foreground font-semibold">
-                    Due to Poor Fit
-                  </h3>
-                  <p className="text-muted-foreground">
-                    of returns are caused by sizing issues — the
-                    single biggest reason customers send items
-                    back.
-                  </p>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-5xl text-blue-500 mb-4"
-                    style={{ fontWeight: 700 }}
-                  >
-                    52%
-                  </div>
-                  <h3 className="text-xl mb-3 text-foreground font-semibold">
-                    Cart Abandonment
-                  </h3>
-                  <p className="text-muted-foreground">
-                    of shoppers abandon their cart due to
-                    uncertainty about how clothing will fit or look
-                    on them.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Research & Discovery */}
-        <section className="py-32 px-6 lg:px-12">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2
-                className="text-4xl md:text-5xl tracking-tighter mb-8 text-foreground"
-                style={{ fontWeight: 600 }}
-              >
-                Research & Discovery
-              </h2>
-              <p className="text-xl text-foreground/80 leading-relaxed mb-12">
-                We conducted user interviews with frequent online
-                shoppers, performed competitive analysis of
-                existing try-on solutions, and developed personas
-                to understand pain points and opportunities in the
-                fashion e-commerce space.
-              </p>
-
-              {/* Competitive Analysis Placeholder */}
-              <div className="mb-12">
-                <h3
-                  className="text-2xl mb-4 text-foreground"
-                  style={{ fontWeight: 600 }}
-                >
-                  Competitive Analysis
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  We analyzed existing virtual try-on solutions and
-                  fashion apps to identify gaps and opportunities
-                  for differentiation.
-                </p>
-                <div className="rounded-2xl overflow-hidden border border-blue-500/15 bg-card/80 backdrop-blur-lg p-12 flex items-center justify-center min-h-[300px]">
-                  <div className="text-center">
-                    <p className="text-muted-foreground text-lg">
-                      Competitive Analysis Board
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* What We Learned */}
-              {/* Mobile Carousel */}
-              <div className="md:hidden mb-12">
-                <MobileCarousel>
-                  {[
-                    <div
-                      key="insight1"
-                      className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8"
-                    >
-                      <div
-                        className="text-sm uppercase tracking-wider text-blue-500 mb-3"
-                        style={{ fontWeight: 600 }}
-                      >
-                        What We Learned
-                      </div>
-                      <h3
-                        className="text-2xl mb-4 text-foreground"
-                        style={{ fontWeight: 600 }}
-                      >
-                        Seeing Is Believing
-                      </h3>
-                      <p className="text-muted-foreground text-lg leading-relaxed">
-                        Users overwhelmingly said they want to see
-                        clothes on THEIR body, not a model. Generic
-                        product photos create a disconnect that
-                        erodes confidence.
-                      </p>
-                    </div>,
-                    <div
-                      key="insight2"
-                      className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8"
-                    >
-                      <div
-                        className="text-sm uppercase tracking-wider text-blue-500 mb-3"
-                        style={{ fontWeight: 600 }}
-                      >
-                        What We Learned
-                      </div>
-                      <h3
-                        className="text-2xl mb-4 text-foreground"
-                        style={{ fontWeight: 600 }}
-                      >
-                        Size Charts Fail
-                      </h3>
-                      <p className="text-muted-foreground text-lg leading-relaxed">
-                        Size charts are confusing and inconsistent
-                        across brands. Users expressed frustration
-                        at being a different size in every store,
-                        making it impossible to shop confidently.
-                      </p>
-                    </div>,
-                    <div
-                      key="insight3"
-                      className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8"
-                    >
-                      <div
-                        className="text-sm uppercase tracking-wider text-blue-500 mb-3"
-                        style={{ fontWeight: 600 }}
-                      >
-                        What We Learned
-                      </div>
-                      <h3
-                        className="text-2xl mb-4 text-foreground"
-                        style={{ fontWeight: 600 }}
-                      >
-                        Returns Erode Trust
-                      </h3>
-                      <p className="text-muted-foreground text-lg leading-relaxed">
-                        Frequent returns create a negative cycle:
-                        users lose trust in online shopping, shop
-                        less, or only buy from brands where they
-                        already know their size.
-                      </p>
-                    </div>,
-                    <div
-                      key="insight4"
-                      className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8"
-                    >
-                      <div
-                        className="text-sm uppercase tracking-wider text-blue-500 mb-3"
-                        style={{ fontWeight: 600 }}
-                      >
-                        What We Learned
-                      </div>
-                      <h3
-                        className="text-2xl mb-4 text-foreground"
-                        style={{ fontWeight: 600 }}
-                      >
-                        Personalization Converts
-                      </h3>
-                      <p className="text-muted-foreground text-lg leading-relaxed">
-                        Users responded positively to personalized
-                        recommendations. Curated selections based
-                        on their style preferences significantly
-                        increased engagement and purchase intent.
-                      </p>
-                    </div>,
-                  ]}
-                </MobileCarousel>
-              </div>
-
-              {/* Desktop Stack */}
-              <div className="hidden md:block space-y-6 mb-12">
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-3"
-                    style={{ fontWeight: 600 }}
-                  >
-                    What We Learned
-                  </div>
-                  <h3
-                    className="text-2xl mb-4 text-foreground"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Seeing Is Believing
-                  </h3>
-                  <p className="text-muted-foreground text-lg leading-relaxed">
-                    Users overwhelmingly said they want to see
-                    clothes on THEIR body, not a model. Generic
-                    product photos create a disconnect that erodes
-                    confidence.
-                  </p>
-                </div>
-
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-3"
-                    style={{ fontWeight: 600 }}
-                  >
-                    What We Learned
-                  </div>
-                  <h3
-                    className="text-2xl mb-4 text-foreground"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Size Charts Fail
-                  </h3>
-                  <p className="text-muted-foreground text-lg leading-relaxed">
-                    Size charts are confusing and inconsistent
-                    across brands. Users expressed frustration at
-                    being a different size in every store, making
-                    it impossible to shop confidently.
-                  </p>
-                </div>
-
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-3"
-                    style={{ fontWeight: 600 }}
-                  >
-                    What We Learned
-                  </div>
-                  <h3
-                    className="text-2xl mb-4 text-foreground"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Returns Erode Trust
-                  </h3>
-                  <p className="text-muted-foreground text-lg leading-relaxed">
-                    Frequent returns create a negative cycle: users
-                    lose trust in online shopping, shop less, or
-                    only buy from brands where they already know
-                    their size.
-                  </p>
-                </div>
-
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-3"
-                    style={{ fontWeight: 600 }}
-                  >
-                    What We Learned
-                  </div>
-                  <h3
-                    className="text-2xl mb-4 text-foreground"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Personalization Converts
-                  </h3>
-                  <p className="text-muted-foreground text-lg leading-relaxed">
-                    Users responded positively to personalized
-                    recommendations. Curated selections based on
-                    their style preferences significantly increased
-                    engagement and purchase intent.
-                  </p>
-                </div>
-              </div>
-
-              {/* How Might We */}
-              <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-3xl p-12 border border-blue-500/20 mb-12">
-                <h3
-                  className="text-2xl mb-8 text-center text-foreground"
-                  style={{ fontWeight: 600 }}
-                >
-                  How Might We?
-                </h3>
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div className="text-center">
-                    <p className="text-foreground/80 text-lg leading-relaxed italic">
-                      "How might we help users visualize how
-                      clothing fits on their unique body type
-                      before purchasing?"
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-foreground/80 text-lg leading-relaxed italic">
-                      "How might we reduce return rates by
-                      increasing purchase confidence in online
-                      fashion shopping?"
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-8 mb-12"></div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* The Problem */}
-        <section className="py-32 px-6 lg:px-12 bg-gradient-to-br from-blue-500/5 via-background to-background">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2
-                className="text-4xl md:text-5xl tracking-tighter mb-8 text-foreground"
-                style={{ fontWeight: 600 }}
-              >
-                The Problem
-              </h2>
-              <p className="text-xl text-foreground/80 leading-relaxed mb-12">
-                Online clothing shopping is fundamentally
-                frustrating. Users can't try before they buy,
-                leading to uncertainty, wasted money, and a broken
-                experience.
-              </p>
-
-              {/* Mobile Carousel */}
-              <div className="md:hidden">
-                <MobileCarousel>
-                  {[
-                    <div
-                      key="challenge1"
-                      className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8"
-                    >
-                      <div
-                        className="text-sm uppercase tracking-wider text-blue-500 mb-4"
-                        style={{ fontWeight: 600 }}
-                      >
-                        Challenge 01
-                      </div>
-                      <h3 className="text-xl mb-3 text-foreground font-semibold">
-                        Fit Uncertainty
-                      </h3>
-                      <p className="text-muted-foreground">
-                        Users can't visualize how clothing will look
-                        on their specific body type. Product photos
-                        on models don't reflect the real shopping
-                        experience.
-                      </p>
-                    </div>,
-                    <div
-                      key="challenge2"
-                      className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8"
-                    >
-                      <div
-                        className="text-sm uppercase tracking-wider text-blue-500 mb-4"
-                        style={{ fontWeight: 600 }}
-                      >
-                        Challenge 02
-                      </div>
-                      <h3 className="text-xl mb-3 text-foreground font-semibold">
-                        High Return Rates
-                      </h3>
-                      <p className="text-muted-foreground">
-                        30–40% of online clothing purchases are
-                        returned, costing retailers billions
-                        annually in shipping, restocking, and lost
-                        customer trust.
-                      </p>
-                    </div>,
-                    <div
-                      key="challenge3"
-                      className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8"
-                    >
-                      <div
-                        className="text-sm uppercase tracking-wider text-blue-500 mb-4"
-                        style={{ fontWeight: 600 }}
-                      >
-                        Challenge 03
-                      </div>
-                      <h3 className="text-xl mb-3 text-foreground font-semibold">
-                        Sizing Inconsistency
-                      </h3>
-                      <p className="text-muted-foreground">
-                        Every brand sizes differently, making it
-                        impossible for shoppers to know their size
-                        without ordering and trying on — then
-                        returning what doesn't fit.
-                      </p>
-                    </div>,
-                  ]}
-                </MobileCarousel>
-              </div>
-
-              {/* Desktop Grid */}
-              <div className="hidden md:grid md:grid-cols-3 gap-6">
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-4"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Challenge 01
-                  </div>
-                  <h3 className="text-xl mb-3 text-foreground font-semibold">
-                    Fit Uncertainty
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Users can't visualize how clothing will look on
-                    their specific body type. Product photos on
-                    models don't reflect the real shopping
-                    experience.
-                  </p>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-4"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Challenge 02
-                  </div>
-                  <h3 className="text-xl mb-3 text-foreground font-semibold">
-                    High Return Rates
-                  </h3>
-                  <p className="text-muted-foreground">
-                    30–40% of online clothing purchases are
-                    returned, costing retailers billions annually in
-                    shipping, restocking, and lost customer trust.
-                  </p>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-4"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Challenge 03
-                  </div>
-                  <h3 className="text-xl mb-3 text-foreground font-semibold">
-                    Sizing Inconsistency
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Every brand sizes differently, making it
-                    impossible for shoppers to know their size
-                    without ordering and trying on — then returning
-                    what doesn't fit.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* The Solution - Product Overview */}
-        <section className="py-32 px-6 lg:px-12">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2
-                className="text-4xl md:text-5xl tracking-tighter mb-8 text-foreground"
-                style={{ fontWeight: 600 }}
-              >
-                <span className="hidden lg:flex items-center gap-3">
-                  The Solution:{" "}
-                  <span className="inline-block" style={{ width: '140px', height: '56px' }}>
-                    <Logo />
-                  </span>
-                </span>
-                <span className="lg:hidden flex flex-col gap-2 items-start">
-                  <span>The Solution:</span>
-                  <span className="inline-block" style={{ width: '140px', height: '56px' }}>
-                    <Logo />
-                  </span>
-                </span>
-              </h2>
-              <p className="text-xl text-foreground/80 leading-relaxed mb-12">
-                Through Fitify, online fashion shopping becomes{" "}
-                <span className="text-blue-500 font-semibold">
-                  visual, confident, and personalized
-                </span>
-                . An AI-powered platform that lets you see the fit
-                before you buy.
-              </p>
-
-              <div className="grid md:grid-cols-3 gap-8 mb-16">
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-4"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Core Feature
-                  </div>
-                  <h3
-                    className="text-2xl mb-4 text-foreground"
-                    style={{ fontWeight: 600 }}
-                  >
-                    AI Virtual Try-On
-                  </h3>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
-                    AI image generation renders clothing directly
-                    onto user-uploaded photos, showing exactly how
-                    garments look on their unique body type with
-                    accurate fit and draping.
-                  </p>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-4"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Core Feature
-                  </div>
-                  <h3
-                    className="text-2xl mb-4 text-foreground"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Brand Integration
-                  </h3>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
-                    Shop from top brands like H&M, Zara, and
-                    ARITZIA in one unified experience. Browse new
-                    arrivals, trending items, and exclusive
-                    collections all in one place.
-                  </p>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-4"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Core Feature
-                  </div>
-                  <h3
-                    className="text-2xl mb-4 text-foreground"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Picked for You
-                  </h3>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
-                    AI-curated recommendations based on style
-                    preferences, body type, and browsing history.
-                    The more you use Fitify, the smarter it gets
-                    at finding your perfect pieces.
-                  </p>
-                </div>
-              </div>
-
-              {/* Brand Partners Showcase */}
-              <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-3xl p-12 border border-blue-500/20">
-                <h3
-                  className="text-2xl mb-8 text-center text-foreground"
-                  style={{ fontWeight: 600 }}
-                >
-                  Brand Partners
-                </h3>
-                <p className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
-                  Fitify brings your favorite brands together in
-                  one place. Browse, try on, and shop from a
-                  curated selection of top fashion retailers.
-                </p>
-
-                {/* Mobile Carousel */}
-                <div className="md:hidden">
-                  <MobileCarousel>
-                    {[
-                      <div
-                        key="brand1"
-                        className="flex flex-col items-center"
-                      >
-                        <div className="w-64 h-32 mb-4 flex items-center justify-center bg-white rounded-2xl border border-border">
-                          <p className="text-2xl text-foreground/60 font-semibold tracking-wider">
-                            H&M
-                          </p>
-                        </div>
-                      </div>,
-                      <div
-                        key="brand2"
-                        className="flex flex-col items-center"
-                      >
-                        <div className="w-64 h-32 mb-4 flex items-center justify-center bg-white rounded-2xl border border-border">
-                          <p className="text-2xl text-foreground/60 font-semibold tracking-wider">
-                            ZARA
-                          </p>
-                        </div>
-                      </div>,
-                      <div
-                        key="brand3"
-                        className="flex flex-col items-center"
-                      >
-                        <div className="w-64 h-32 mb-4 flex items-center justify-center bg-white rounded-2xl border border-border">
-                          <p className="text-2xl text-foreground/60 font-semibold tracking-wider">
-                            ARITZIA
-                          </p>
-                        </div>
-                      </div>,
-                      <div
-                        key="brand4"
-                        className="flex flex-col items-center"
-                      >
-                        <div className="w-64 h-32 mb-4 flex items-center justify-center bg-white rounded-2xl border border-border">
-                          <p className="text-2xl text-foreground/60 font-semibold tracking-wider">
-                            NIKE
-                          </p>
-                        </div>
-                      </div>,
-                      <div
-                        key="brand5"
-                        className="flex flex-col items-center"
-                      >
-                        <div className="w-64 h-32 mb-4 flex items-center justify-center bg-white rounded-2xl border border-border">
-                          <p className="text-2xl text-foreground/60 font-semibold tracking-wider">
-                            LEVI'S
-                          </p>
-                        </div>
-                      </div>,
-                      <div
-                        key="brand6"
-                        className="flex flex-col items-center"
-                      >
-                        <div className="w-64 h-32 mb-4 flex items-center justify-center bg-white rounded-2xl border border-border">
-                          <p className="text-2xl text-foreground/60 font-semibold tracking-wider">
-                            UNIQLO
-                          </p>
-                        </div>
-                      </div>,
-                    ]}
-                  </MobileCarousel>
-                </div>
-
-                {/* Desktop Grid */}
-                <div className="hidden md:grid md:grid-cols-3 gap-12">
-                  <motion.div
-                    className="flex flex-col items-center"
-                    whileHover={{
-                      scale: 1.05,
-                      y: -10,
-                    }}
-                    transition={{
-                      duration: 0.4,
-                      ease: "easeOut",
-                    }}
-                  >
-                    <div className="w-full h-32 mb-4 flex items-center justify-center bg-white rounded-2xl border border-border shadow-sm">
-                      <p className="text-2xl text-foreground/60 font-semibold tracking-wider">
-                        H&M
-                      </p>
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    className="flex flex-col items-center"
-                    whileHover={{
-                      scale: 1.05,
-                      y: -10,
-                    }}
-                    transition={{
-                      duration: 0.4,
-                      ease: "easeOut",
-                    }}
-                  >
-                    <div className="w-full h-32 mb-4 flex items-center justify-center bg-white rounded-2xl border border-border shadow-sm">
-                      <p className="text-2xl text-foreground/60 font-semibold tracking-wider">
-                        ZARA
-                      </p>
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    className="flex flex-col items-center"
-                    whileHover={{
-                      scale: 1.05,
-                      y: -10,
-                    }}
-                    transition={{
-                      duration: 0.4,
-                      ease: "easeOut",
-                    }}
-                  >
-                    <div className="w-full h-32 mb-4 flex items-center justify-center bg-white rounded-2xl border border-border shadow-sm">
-                      <p className="text-2xl text-foreground/60 font-semibold tracking-wider">
-                        ARITZIA
-                      </p>
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    className="flex flex-col items-center"
-                    whileHover={{
-                      scale: 1.05,
-                      y: -10,
-                    }}
-                    transition={{
-                      duration: 0.4,
-                      ease: "easeOut",
-                    }}
-                  >
-                    <div className="w-full h-32 mb-4 flex items-center justify-center bg-white rounded-2xl border border-border shadow-sm">
-                      <p className="text-2xl text-foreground/60 font-semibold tracking-wider">
-                        NIKE
-                      </p>
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    className="flex flex-col items-center"
-                    whileHover={{
-                      scale: 1.05,
-                      y: -10,
-                    }}
-                    transition={{
-                      duration: 0.4,
-                      ease: "easeOut",
-                    }}
-                  >
-                    <div className="w-full h-32 mb-4 flex items-center justify-center bg-white rounded-2xl border border-border shadow-sm">
-                      <p className="text-2xl text-foreground/60 font-semibold tracking-wider">
-                        LEVI'S
-                      </p>
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    className="flex flex-col items-center"
-                    whileHover={{
-                      scale: 1.05,
-                      y: -10,
-                    }}
-                    transition={{
-                      duration: 0.4,
-                      ease: "easeOut",
-                    }}
-                  >
-                    <div className="w-full h-32 mb-4 flex items-center justify-center bg-white rounded-2xl border border-border shadow-sm">
-                      <p className="text-2xl text-foreground/60 font-semibold tracking-wider">
-                        UNIQLO
-                      </p>
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Shopping Experience */}
-        <section className="py-32 px-6 lg:px-12 bg-gradient-to-br from-blue-500/5 via-background to-background">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2
-                className="text-4xl md:text-5xl tracking-tighter mb-8 text-foreground"
-                style={{ fontWeight: 600 }}
-              >
-                Shopping Made Effortless
-              </h2>
-              <p className="text-xl text-foreground/80 leading-relaxed mb-12">
-                Fitify is designed to seamlessly integrate into
-                how people actually shop — from casual browsing to
-                confident purchasing.
-              </p>
-
-              {/* Mobile Carousel */}
-              <div className="md:hidden">
-                <MobileCarousel>
-                  {[
-                    <div
-                      key="experience1"
-                      className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border overflow-hidden"
-                    >
-                      <div
-                        className="w-full h-64 flex items-center justify-center"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
-                        }}
-                      >
-                        <p className="text-blue-600/60 text-lg">
-                          Browse & Discover
-                        </p>
-                      </div>
-                      <div className="p-6">
-                        <h3 className="text-lg mb-2 text-foreground font-semibold">
-                          Browse & Discover
-                        </h3>
-                        <p className="text-muted-foreground text-sm">
-                          Find the perfect outfit from your couch
-                          with curated collections and brand
-                          partnerships
-                        </p>
-                      </div>
-                    </div>,
-                    <div
-                      key="experience2"
-                      className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border overflow-hidden"
-                    >
-                      <div
-                        className="w-full h-64 flex items-center justify-center"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
-                        }}
-                      >
-                        <p className="text-blue-600/60 text-lg">
-                          Try Before You Buy
-                        </p>
-                      </div>
-                      <div className="p-6">
-                        <h3 className="text-lg mb-2 text-foreground font-semibold">
-                          Try Before You Buy
-                        </h3>
-                        <p className="text-muted-foreground text-sm">
-                          See exactly how it looks on you with
-                          AI-powered virtual try-on
-                        </p>
-                      </div>
-                    </div>,
-                    <div
-                      key="experience3"
-                      className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border overflow-hidden"
-                    >
-                      <div
-                        className="w-full h-64 flex items-center justify-center"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
-                        }}
-                      >
-                        <p className="text-blue-600/60 text-lg">
-                          Shop with Confidence
-                        </p>
-                      </div>
-                      <div className="p-6">
-                        <h3 className="text-lg mb-2 text-foreground font-semibold">
-                          Shop with Confidence
-                        </h3>
-                        <p className="text-muted-foreground text-sm">
-                          Purchase knowing it'll fit — fewer
-                          returns, more satisfaction
-                        </p>
-                      </div>
-                    </div>,
-                  ]}
-                </MobileCarousel>
-              </div>
-
-              {/* Desktop Grid */}
-              <div className="hidden md:grid md:grid-cols-3 gap-8">
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border overflow-hidden">
-                  <div
-                    className="w-full h-64 flex items-center justify-center"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
-                    }}
-                  >
-                    <p className="text-blue-600/60 text-lg">
-                      Browse & Discover
-                    </p>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-lg mb-2 text-foreground font-semibold">
-                      Browse & Discover
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Find the perfect outfit from your couch with
-                      curated collections and brand partnerships
-                    </p>
-                  </div>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border overflow-hidden">
-                  <div
-                    className="w-full h-64 flex items-center justify-center"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
-                    }}
-                  >
-                    <p className="text-blue-600/60 text-lg">
-                      Try Before You Buy
-                    </p>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-lg mb-2 text-foreground font-semibold">
-                      Try Before You Buy
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      See exactly how it looks on you with
-                      AI-powered virtual try-on
-                    </p>
-                  </div>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border overflow-hidden">
-                  <div
-                    className="w-full h-64 flex items-center justify-center"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
-                    }}
-                  >
-                    <p className="text-blue-600/60 text-lg">
-                      Shop with Confidence
-                    </p>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-lg mb-2 text-foreground font-semibold">
-                      Shop with Confidence
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Purchase knowing it'll fit — fewer returns,
-                      more satisfaction
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* App Features */}
-        <section className="py-32 px-6 lg:px-12">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2
-                className="text-4xl md:text-5xl tracking-tighter mb-8 text-foreground text-center"
-                style={{ fontWeight: 600 }}
-              >
-                App Features
-              </h2>
-              <p className="text-xl text-foreground/80 leading-relaxed mb-16 text-center max-w-3xl mx-auto">
-                The Fitify app provides a seamless shopping
-                experience with AI-powered try-on, personalized
-                recommendations, and multi-brand integration.
-              </p>
-
-              {/* Mobile Images - horizontal scroll */}
-              <div className="lg:hidden flex overflow-x-auto gap-4 mb-12 pb-4 px-2">
-                {[
-                  "Virtual Try-On",
-                  "Brand Discovery",
-                  "Picked for You",
-                  "Smart Filtering",
-                  "Seamless Checkout",
-                ].map((label) => (
-                  <div
-                    key={label}
-                    className="w-40 h-72 flex-shrink-0 drop-shadow-xl rounded-2xl flex items-center justify-center"
-                    style={{
-                      background:
-                        "linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)",
-                    }}
-                  >
-                    <p className="text-white/70 text-xs text-center px-3">
-                      {label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Mobile Accordion */}
-              <div className="lg:hidden space-y-4">
-                {/* Feature 1 */}
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border overflow-hidden">
-                  <button
-                    onClick={() =>
-                      setOpenAccordion(
-                        openAccordion === 0 ? null : 0,
-                      )
-                    }
-                    className="w-full px-6 py-4 flex items-center justify-between text-left"
-                  >
-                    <h3 className="text-xl font-semibold text-foreground">
-                      Virtual Try-On
-                    </h3>
-                    <ChevronDown
-                      className={`w-5 h-5 text-foreground transition-transform ${openAccordion === 0 ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                  {openAccordion === 0 && (
-                    <div className="px-6 pb-6">
-                      <p className="text-muted-foreground text-base mb-4">
-                        Upload a photo and instantly see any
-                        garment rendered on your body. AI image
-                        generation creates accurate visualizations
-                        showing fit, draping, and proportions.
-                      </p>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            One-tap photo upload with camera or
-                            gallery
-                          </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            AI renders clothing with accurate fit
-                            and draping
-                          </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            Compare multiple outfits side by side
-                          </span>
-                        </li>
-                      </ul>
-                    </div>
-                  )}
-                </div>
-
-                {/* Feature 2 */}
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border overflow-hidden">
-                  <button
-                    onClick={() =>
-                      setOpenAccordion(
-                        openAccordion === 1 ? null : 1,
-                      )
-                    }
-                    className="w-full px-6 py-4 flex items-center justify-between text-left"
-                  >
-                    <h3 className="text-xl font-semibold text-foreground">
-                      Brand Discovery
-                    </h3>
-                    <ChevronDown
-                      className={`w-5 h-5 text-foreground transition-transform ${openAccordion === 1 ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                  {openAccordion === 1 && (
-                    <div className="px-6 pb-6">
-                      <p className="text-muted-foreground text-base mb-4">
-                        Browse and shop from top fashion brands
-                        all in one app. Discover new arrivals,
-                        trending collections, and exclusive items
-                        from H&M, Zara, ARITZIA, and more.
-                      </p>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            Multi-brand catalog in one unified
-                            app
-                          </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            New arrivals and trending items
-                            updated daily
-                          </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            Brand-specific collections and
-                            exclusive drops
-                          </span>
-                        </li>
-                      </ul>
-                    </div>
-                  )}
-                </div>
-
-                {/* Feature 3 */}
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border overflow-hidden">
-                  <button
-                    onClick={() =>
-                      setOpenAccordion(
-                        openAccordion === 2 ? null : 2,
-                      )
-                    }
-                    className="w-full px-6 py-4 flex items-center justify-between text-left"
-                  >
-                    <h3 className="text-xl font-semibold text-foreground">
-                      Picked for You
-                    </h3>
-                    <ChevronDown
-                      className={`w-5 h-5 text-foreground transition-transform ${openAccordion === 2 ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                  {openAccordion === 2 && (
-                    <div className="px-6 pb-6">
-                      <p className="text-muted-foreground text-base mb-4">
-                        AI-curated recommendations that learn your
-                        style. The more you browse and try on, the
-                        smarter Fitify gets at surfacing pieces
-                        you'll love.
-                      </p>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            Personalized "Picked for You" feed
-                          </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            Style preference learning over time
-                          </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            Cross-brand recommendations based on
-                            taste
-                          </span>
-                        </li>
-                      </ul>
-                    </div>
-                  )}
-                </div>
-
-                {/* Feature 4 */}
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border overflow-hidden">
-                  <button
-                    onClick={() =>
-                      setOpenAccordion(
-                        openAccordion === 3 ? null : 3,
-                      )
-                    }
-                    className="w-full px-6 py-4 flex items-center justify-between text-left"
-                  >
-                    <h3 className="text-xl font-semibold text-foreground">
-                      Smart Filtering
-                    </h3>
-                    <ChevronDown
-                      className={`w-5 h-5 text-foreground transition-transform ${openAccordion === 3 ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                  {openAccordion === 3 && (
-                    <div className="px-6 pb-6">
-                      <p className="text-muted-foreground text-base mb-4">
-                        Find exactly what you're looking for with
-                        intelligent search and filtering. Sort by
-                        brand, style, price, occasion, and more.
-                      </p>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            Filter by brand, category, price range
-                          </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            Occasion-based search (casual, formal,
-                            athletic)
-                          </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            Save searches and get notified of new
-                            matches
-                          </span>
-                        </li>
-                      </ul>
-                    </div>
-                  )}
-                </div>
-
-                {/* Feature 5 */}
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border overflow-hidden">
-                  <button
-                    onClick={() =>
-                      setOpenAccordion(
-                        openAccordion === 4 ? null : 4,
-                      )
-                    }
-                    className="w-full px-6 py-4 flex items-center justify-between text-left"
-                  >
-                    <h3 className="text-xl font-semibold text-foreground">
-                      Seamless Checkout
-                    </h3>
-                    <ChevronDown
-                      className={`w-5 h-5 text-foreground transition-transform ${openAccordion === 4 ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                  {openAccordion === 4 && (
-                    <div className="px-6 pb-6">
-                      <p className="text-muted-foreground text-base mb-4">
-                        Save favorites, compare items, and check
-                        out directly within the app. A smooth end-
-                        to-end shopping experience from discovery
-                        to doorstep.
-                      </p>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            Wishlist and favorites with try-on
-                            previews
-                          </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            In-app secure checkout across all
-                            brands
-                          </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1 text-sm font-bold">
-                            ✓
-                          </span>
-                          <span className="text-foreground/80 text-sm">
-                            Order tracking and delivery
-                            notifications
-                          </span>
-                        </li>
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Desktop Layout - hidden on mobile */}
-              <div className="hidden lg:block space-y-24">
-                {/* Virtual Try-On */}
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                  >
-                    <h3
-                      className="text-3xl mb-6 text-foreground"
-                      style={{ fontWeight: 600 }}
-                    >
-                      Virtual Try-On
-                    </h3>
-                    <p className="text-muted-foreground text-lg mb-6">
-                      Upload a photo and instantly see any garment
-                      rendered on your body. AI image generation
-                      creates accurate visualizations showing fit,
-                      draping, and proportions.
-                    </p>
-                    <ul className="space-y-3">
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          One-tap photo upload with camera or
-                          gallery
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          AI renders clothing with accurate fit
-                          and draping
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          Compare multiple outfits side by side
-                        </span>
-                      </li>
-                    </ul>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="rounded-2xl overflow-hidden flex items-center justify-center"
-                  >
-                    <div
-                      className="w-80 h-[500px] mx-auto rounded-3xl flex items-center justify-center"
-                      style={{
-                        background:
-                          "linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)",
-                      }}
-                    >
-                      <p className="text-white/50 text-sm">
-                        Virtual Try-On Screen
-                      </p>
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* Brand Discovery */}
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="order-2 lg:order-1 rounded-2xl overflow-hidden flex items-center justify-center"
-                  >
-                    <div
-                      className="w-full h-[500px] max-w-sm mx-auto rounded-3xl flex items-center justify-center"
-                      style={{
-                        background:
-                          "linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)",
-                      }}
-                    >
-                      <p className="text-white/50 text-sm">
-                        Brand Discovery Screen
-                      </p>
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="order-1 lg:order-2"
-                  >
-                    <h3
-                      className="text-3xl mb-6 text-foreground"
-                      style={{ fontWeight: 600 }}
-                    >
-                      Brand Discovery
-                    </h3>
-                    <p className="text-muted-foreground text-lg mb-6">
-                      Browse and shop from top fashion brands all
-                      in one app. Discover new arrivals, trending
-                      collections, and exclusive items from H&M,
-                      Zara, ARITZIA, and more.
-                    </p>
-                    <ul className="space-y-3">
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          Multi-brand catalog in one unified app
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          New arrivals and trending items updated
-                          daily
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          Brand-specific collections and exclusive
-                          drops
-                        </span>
-                      </li>
-                    </ul>
-                  </motion.div>
-                </div>
-
-                {/* Picked for You */}
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                  >
-                    <h3
-                      className="text-3xl mb-6 text-foreground"
-                      style={{ fontWeight: 600 }}
-                    >
-                      Picked for You
-                    </h3>
-                    <p className="text-muted-foreground text-lg mb-6">
-                      AI-curated recommendations that learn your
-                      style. The more you browse and try on, the
-                      smarter Fitify gets at surfacing pieces
-                      you'll love.
-                    </p>
-                    <ul className="space-y-3">
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          Personalized "Picked for You" feed
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          Style preference learning over time
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          Cross-brand recommendations based on
-                          taste
-                        </span>
-                      </li>
-                    </ul>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="rounded-2xl overflow-hidden flex items-center justify-center"
-                  >
-                    <div
-                      className="w-80 h-[500px] mx-auto rounded-3xl flex items-center justify-center"
-                      style={{
-                        background:
-                          "linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)",
-                      }}
-                    >
-                      <p className="text-white/50 text-sm">
-                        Picked for You Screen
-                      </p>
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* Smart Filtering */}
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="order-2 lg:order-1 rounded-2xl overflow-hidden flex items-center justify-center"
-                  >
-                    <div
-                      className="w-80 h-[500px] mx-auto rounded-3xl flex items-center justify-center"
-                      style={{
-                        background:
-                          "linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)",
-                      }}
-                    >
-                      <p className="text-white/50 text-sm">
-                        Smart Filtering Screen
-                      </p>
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="order-1 lg:order-2"
-                  >
-                    <h3
-                      className="text-3xl mb-6 text-foreground"
-                      style={{ fontWeight: 600 }}
-                    >
-                      Smart Filtering
-                    </h3>
-                    <p className="text-muted-foreground text-lg mb-6">
-                      Find exactly what you're looking for with
-                      intelligent search and filtering. Sort by
-                      brand, style, price, occasion, and more.
-                    </p>
-                    <ul className="space-y-3">
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          Filter by brand, category, price range
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          Occasion-based search (casual, formal,
-                          athletic)
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          Save searches and get notified of new
-                          matches
-                        </span>
-                      </li>
-                    </ul>
-                  </motion.div>
-                </div>
-
-                {/* Seamless Checkout */}
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                  >
-                    <h3
-                      className="text-3xl mb-6 text-foreground"
-                      style={{ fontWeight: 600 }}
-                    >
-                      Seamless Checkout
-                    </h3>
-                    <p className="text-muted-foreground text-lg mb-6">
-                      Save favorites, compare items, and check out
-                      directly within the app. A smooth end-to-end
-                      shopping experience from discovery to
-                      doorstep.
-                    </p>
-                    <ul className="space-y-3">
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          Wishlist and favorites with try-on
-                          previews
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          In-app secure checkout across all brands
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-blue-500 mt-1 font-bold">
-                          ✓
-                        </span>
-                        <span className="text-foreground/80">
-                          Order tracking and delivery notifications
-                        </span>
-                      </li>
-                    </ul>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="rounded-2xl overflow-hidden flex items-center justify-center"
-                  >
-                    <div
-                      className="w-80 h-[500px] mx-auto rounded-3xl flex items-center justify-center"
-                      style={{
-                        background:
-                          "linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)",
-                      }}
-                    >
-                      <p className="text-white/50 text-sm">
-                        Checkout Screen
-                      </p>
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Design System */}
-        <section className="py-32 px-6 lg:px-12 bg-gradient-to-br from-blue-500/5 via-background to-background">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2
-                className="text-4xl md:text-5xl tracking-tighter mb-8 text-foreground"
-                style={{ fontWeight: 600 }}
-              >
-                Design System
-              </h2>
-              <p className="text-xl text-foreground/80 leading-relaxed mb-12">
-                A clean, modern visual language that conveys trust,
-                confidence, and the cutting-edge technology
-                powering the experience.
-              </p>
-
-              {/* Color Palette */}
-              <div className="mb-12">
-                <h3
-                  className="text-2xl mb-6 text-foreground"
-                  style={{ fontWeight: 600 }}
-                >
-                  Color Palette
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="bg-white rounded-2xl p-6 border border-border">
-                    <div
-                      className="w-full h-24 rounded-lg mb-4"
-                      style={{ backgroundColor: "#3360EC" }}
-                    ></div>
-                    <p className="font-mono text-sm text-muted-foreground">
-                      #3360EC
-                    </p>
-                    <p className="text-sm text-foreground font-medium">
-                      Primary Blue
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-6 border border-border">
-                    <div
-                      className="w-full h-24 rounded-lg mb-4"
-                      style={{ backgroundColor: "#1A1A2E" }}
-                    ></div>
-                    <p className="font-mono text-sm text-muted-foreground">
-                      #1A1A2E
-                    </p>
-                    <p className="text-sm text-foreground font-medium">
-                      Primary Dark
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-6 border border-border">
-                    <div className="w-full h-24 bg-white rounded-lg mb-4 border border-gray-200"></div>
-                    <p className="font-mono text-sm text-muted-foreground">
-                      #FFFFFF
-                    </p>
-                    <p className="text-sm text-foreground font-medium">
-                      Primary Light
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-6 border border-border">
-                    <div
-                      className="w-full h-24 rounded-lg mb-4"
-                      style={{ backgroundColor: "#6B8AFF" }}
-                    ></div>
-                    <p className="font-mono text-sm text-muted-foreground">
-                      #6B8AFF
-                    </p>
-                    <p className="text-sm text-foreground font-medium">
-                      Accent Blue
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Typography */}
-              <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border p-8">
-                <h3
-                  className="text-2xl mb-6 text-foreground"
-                  style={{ fontWeight: 600 }}
-                >
-                  Typography
-                </h3>
-                <div className="space-y-6">
-                  <div>
-                    <p
-                      className="text-sm text-blue-500 mb-2 uppercase tracking-wider"
-                      style={{ fontWeight: 600 }}
-                    >
-                      Headings
-                    </p>
-                    <p
-                      style={{
-                        fontFamily:
-                          "Poppins",
-                      }}
-                      className="text-2xl text-foreground"
-                    >
-                      Poppins
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      40px, 32px, 24px, 20px
-                    </p>
-                  </div>
-                  <div>
-                    <p
-                      className="text-sm text-blue-500 mb-2 uppercase tracking-wider"
-                      style={{ fontWeight: 600 }}
-                    >
-                      Body Text
-                    </p>
-                    <p
-                      style={{
-                        fontFamily:
-                          "Poppins, regular, sans-serif",
-                      }}
-                      className="text-lg text-foreground"
-                    >
-                      Poppins, Regular
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      17px (lead), 15px (body), 13px (caption)
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* How Users Access Fitify */}
-        <section className="py-32 px-6 lg:px-12">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2
-                className="text-4xl md:text-5xl tracking-tighter mb-8 text-foreground flex items-center gap-3"
-                style={{ fontWeight: 600 }}
-              >
-                How Users Get to{" "}
-                <span className="inline-block" style={{ width: '140px', height: '56px' }}>
-                  <Logo />
-                </span>
-              </h2>
-              <p className="text-xl text-foreground/80 leading-relaxed mb-12">
-                We designed a multi-channel distribution strategy
-                that reaches users wherever they discover new
-                fashion experiences.
-              </p>
-
-              <div className="grid md:grid-cols-3 gap-8">
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-4"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Channel 01
-                  </div>
-                  <h3
-                    className="text-2xl mb-4 text-foreground"
-                    style={{ fontWeight: 600 }}
-                  >
-                    App Store
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Direct download from the iOS App Store with a
-                    premium listing, screenshots, and App Store
-                    Optimization to drive organic discovery.
-                  </p>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-4"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Channel 02
-                  </div>
-                  <h3
-                    className="text-2xl mb-4 text-foreground"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Brand Partnerships
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Integration with major fashion retailers who
-                    benefit from reduced return rates and increased
-                    customer satisfaction.
-                  </p>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8 hover:border-blue-500/30 transition-colors">
-                  <div
-                    className="text-sm uppercase tracking-wider text-blue-500 mb-4"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Channel 03
-                  </div>
-                  <h3
-                    className="text-2xl mb-4 text-foreground"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Social Media
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Influencer partnerships and viral try-on
-                    content on Instagram, TikTok, and YouTube to
-                    drive awareness and downloads.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* To Wrap Up */}
-        <section className="py-32 px-6 lg:px-12 bg-gradient-to-br from-blue-500/5 via-background to-background">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2
-                className="text-4xl md:text-5xl tracking-tighter mb-8 text-foreground"
-                style={{ fontWeight: 600 }}
-              >
-                To Wrap Up
-              </h2>
-              <p className="text-xl text-foreground/80 leading-relaxed mb-12">
-                Fitify transforms online fashion shopping from
-                guesswork into confidence. See the fit, love the
-                fit, keep the fit.
-              </p>
-
-              <div className="grid md:grid-cols-2 gap-8 mb-12">
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8">
-                  <h3
-                    className="text-2xl mb-4 text-blue-500"
-                    style={{ fontWeight: 600 }}
-                  >
-                    See the fit before you buy
-                  </h3>
-                  <p className="text-muted-foreground text-lg">
-                    AI-powered virtual try-on eliminates the
-                    guesswork, giving users a true preview of how
-                    clothing looks on their unique body.
-                  </p>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8">
-                  <h3
-                    className="text-2xl mb-4 text-blue-500"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Shop smarter, return less
-                  </h3>
-                  <p className="text-muted-foreground text-lg">
-                    By solving the visualization gap, Fitify
-                    directly addresses the $550B return problem in
-                    fashion e-commerce, benefiting both consumers
-                    and retailers.
-                  </p>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8">
-                  <h3
-                    className="text-2xl mb-4 text-blue-500"
-                    style={{ fontWeight: 600 }}
-                  >
-                    Your style, personalized
-                  </h3>
-                  <p className="text-muted-foreground text-lg">
-                    AI recommendations learn from user preferences
-                    and behavior, delivering a curated feed that
-                    improves with every interaction.
-                  </p>
-                </div>
-                <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-blue-500/15 p-8">
-                  <h3
-                    className="text-2xl mb-4 text-blue-500"
-                    style={{ fontWeight: 600 }}
-                  >
-                    One app, every brand
-                  </h3>
-                  <p className="text-muted-foreground text-lg">
-                    A unified shopping experience across multiple
-                    retailers means users can discover, try on, and
-                    purchase from all their favorite brands in one
-                    place.
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-card/80 backdrop-blur-lg rounded-2xl border border-border p-8">
-                <h3
-                  className="text-2xl mb-4 text-foreground"
-                  style={{ fontWeight: 600 }}
-                >
-                  What I Learned
-                </h3>
-                <div className="space-y-4 text-muted-foreground text-lg">
-                  <p>
-                    <span className="text-blue-500 font-semibold">
-                      AI-driven design:
-                    </span>{" "}
-                    Designing intuitive interfaces around complex
-                    AI technology taught me the importance of
-                    making powerful features feel simple and
-                    trustworthy to users.
-                  </p>
-                  <p>
-                    <span className="text-blue-500 font-semibold">
-                      E-commerce UX:
-                    </span>{" "}
-                    Understanding the psychology of online shopping
-                    confidence — visualization is everything. When
-                    users can see themselves in clothing, purchase
-                    intent dramatically increases.
-                  </p>
-                  <p>
-                    <span className="text-blue-500 font-semibold">
-                      Cross-brand consistency:
-                    </span>{" "}
-                    Creating a unified experience across different
-                    retailers required careful design systems work
-                    to maintain visual cohesion while respecting
-                    each brand's identity.
-                  </p>
-                  <p>
-                    <span className="text-blue-500 font-semibold">
-                      Research-driven iteration:
-                    </span>{" "}
-                    User interview insights directly shaped the
-                    virtual try-on flow — from how photos are
-                    uploaded to how results are displayed. Every
-                    design decision was grounded in real user
-                    needs.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Next Project CTA */}
-        <section className="py-20 px-6 lg:px-12">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="text-center"
-            >
+            {/* Page dropdown */}
+            <div ref={dropdownRef} style={{ position: "relative" }}>
               <button
-                onClick={() => navigate("/projects")}
-                className="group px-8 py-4 text-white rounded-full hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center gap-2 mx-auto"
+                onClick={() => setIsDropdownOpen((p) => !p)}
                 style={{
-                  background:
-                    "linear-gradient(135deg, #3b82f6, color-mix(in srgb, #3b82f6 80%, white))",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "4px 10px",
+                  background: isDropdownOpen ? "rgba(255,255,255,0.08)" : "none",
+                  border: "1px solid transparent",
+                  borderRadius: 8,
+                  color: "#e0e0e0",
+                  fontSize: 14,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) => { if (!isDropdownOpen) (e.currentTarget.style.background = "rgba(255,255,255,0.05)"); }}
+                onMouseLeave={(e) => { if (!isDropdownOpen) (e.currentTarget.style.background = "none"); }}
+              >
+                <span style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {page.name}
+                </span>
+                <ChevronDown
+                  size={14}
+                  style={{
+                    transition: "transform 0.2s",
+                    transform: isDropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    flexShrink: 0,
+                  }}
+                />
+              </button>
+
+              {/* Dropdown menu */}
+              <AnimatePresence>
+                {isDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 4px)",
+                      left: 0,
+                      minWidth: 220,
+                      background: "#2c2c2c",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: 10,
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                      padding: "4px",
+                      zIndex: 1001,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div style={{ padding: "6px 10px 4px", fontSize: 11, color: "#666", textTransform: "uppercase", letterSpacing: 1 }}>
+                      Pages
+                    </div>
+                    {pages.map((p, i) => (
+                      <button
+                        key={p.nodeId}
+                        onClick={() => switchPage(i)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          width: "100%",
+                          padding: "8px 10px",
+                          background: i === currentPage ? accentBgAlpha : "none",
+                          border: "none",
+                          borderRadius: 6,
+                          color: i === currentPage ? accentColorLight : "#ccc",
+                          fontSize: 13,
+                          cursor: "pointer",
+                          textAlign: "left",
+                          transition: "background 0.1s",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (i !== currentPage) e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (i !== currentPage) e.currentTarget.style.background = "none";
+                        }}
+                      >
+                        <span style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          background: i === currentPage ? accentColor : "#555",
+                          flexShrink: 0,
+                        }} />
+                        {p.name}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#1ABCFE",
+                background: "rgba(26,188,254,0.12)",
+                border: "1px solid rgba(26,188,254,0.25)",
+                padding: "2px 8px",
+                borderRadius: 10,
+                whiteSpace: "nowrap",
+              }}
+            >
+              FigJam
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            {/* Page counter */}
+            <span style={{ fontSize: 12, color: "#666", marginRight: 4 }}>
+              {currentPage + 1}/{pages.length}
+            </span>
+            <button onClick={openInFigma} title="Open in Figma" aria-label="Open in Figma" style={btnStyle}>
+              <ExternalLink size={16} />
+            </button>
+            <button
+              onClick={toggleExpand}
+              title={isExpanded ? "Exit fullscreen" : "Fullscreen"}
+              aria-label={isExpanded ? "Exit fullscreen" : "Fullscreen"}
+              style={btnStyle}
+            >
+              {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
+            {isExpanded && (
+              <button onClick={toggleExpand} title="Close" aria-label="Close" style={{ ...btnStyle, color: "#ff3b30" }}>
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ── iframe viewport ── */}
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            flex: isExpanded ? "1 1 auto" : undefined,
+            aspectRatio: isExpanded ? undefined : "16 / 10",
+            background: "#111",
+          }}
+        >
+          {/* Loading spinner */}
+          <AnimatePresence>
+            {isLoading && (
+              <motion.div
+                key="fjv-loader"
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 12,
+                  background: "#111",
+                  zIndex: 10,
                 }}
               >
-                <span style={{ fontWeight: 600 }}>
-                  View All Projects
-                </span>
-                <span className="group-hover:translate-x-1 transition-transform duration-300">
-                  →
-                </span>
-              </button>
-            </motion.div>
-          </div>
-        </section>
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    border: "3px solid #333",
+                    borderTopColor: accentColor,
+                    borderRadius: "50%",
+                    animation: "fjv-spin 0.7s linear infinite",
+                  }}
+                />
+                <p style={{ color: "#888", fontSize: 14, margin: 0 }}>
+                  Loading {page.name}&hellip;
+                </p>
+                <style>{`@keyframes fjv-spin { to { transform: rotate(360deg); } }`}</style>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <iframe
+            ref={iframeRef}
+            src={embedUrl}
+            title={page.name}
+            onLoad={handleLoad}
+            allowFullScreen
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+          />
+        </div>
+
+        {/* ── Footer ── */}
+        <div
+          className="flex items-center justify-between"
+          style={{
+            padding: "8px 16px",
+            background: "rgba(44,44,44,0.8)",
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ fontSize: 12, color: "#666" }}>
+            Pan, zoom, and explore &mdash; use the dropdown to switch pages
+          </span>
+          {isExpanded && (
+            <span style={{ fontSize: 12, color: "#888", background: "#3a3a3a", padding: "2px 8px", borderRadius: 4 }}>
+              Press Esc to exit
+            </span>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
+
+export default FigJamViewer;
