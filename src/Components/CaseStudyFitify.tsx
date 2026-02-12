@@ -1,11 +1,26 @@
 import { motion } from "motion/react";
 import { Navigation } from "./Navigation";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, Info } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useState } from "react";
 import { MobileCarousel } from "./MobileCarousel";
 import Logo from "../imports/Logo";
 import heroImage from "figma:asset/1a1c438a0f4c04d8941e484906b7065a007af225.png";
+import { FigJamViewer } from "./FigJamViewer";
+import type { FigJamPage } from "./FigJamViewer";
+
+/* ── Fitify FigJam Board Configuration ── */
+const FITIFY_FIGJAM_FILE_KEY = "zTf0yJIuVP4JAp9ycVbtrB";
+const FITIFY_FIGJAM_FILE_NAME = "Fitify-Recreated-Board";
+const FITIFY_FIGJAM_PAGES: FigJamPage[] = [
+  { name: "Project Hub - Main",           nodeId: "0-1" },
+  { name: "Links/Clothes",                nodeId: "2-4053" },
+  { name: "Crazy Eights",                 nodeId: "2-4442" },
+  { name: "Wireframes/Info Architecture", nodeId: "3-4475" },
+  { name: "UI and Prototype",             nodeId: "3-7436" },
+  { name: "Style Sheet and Brand ID",     nodeId: "3-13493" },
+  { name: "Logo Ideation (my drawings)",  nodeId: "3-4749" },
+];
 
 export function CaseStudyFitify() {
   const navigate = useNavigate();
@@ -458,26 +473,58 @@ export function CaseStudyFitify() {
                 fashion e-commerce space.
               </p>
 
-              {/* Competitive Analysis Placeholder */}
+              {/* Interactive FigJam Board */}
               <div className="mb-12">
                 <h3
                   className="text-2xl mb-4 text-foreground"
                   style={{ fontWeight: 600 }}
                 >
-                  Competitive Analysis
+                  Design Process Board
                 </h3>
-                <p className="text-muted-foreground mb-6">
-                  We analyzed existing virtual try-on solutions and
-                  fashion apps to identify gaps and opportunities
-                  for differentiation.
+                <p className="text-muted-foreground mb-4">
+                  Explore the full design process interactively
+                  below — from research and ideation through
+                  wireframes, branding, and final UI. Pan, zoom,
+                  and navigate through each section of the board.
                 </p>
-                <div className="rounded-2xl overflow-hidden border border-blue-500/15 bg-card/80 backdrop-blur-lg p-12 flex items-center justify-center min-h-[300px]">
-                  <div className="text-center">
-                    <p className="text-muted-foreground text-lg">
-                      Competitive Analysis Board
-                    </p>
-                  </div>
+
+                {/* Recreated FigJam note */}
+                <div
+                  className="flex items-start gap-3 mb-6 rounded-xl px-5 py-4"
+                  style={{
+                    background: "rgba(51,96,236,0.06)",
+                    border: "1px solid rgba(51,96,236,0.15)",
+                  }}
+                >
+                  <Info
+                    size={18}
+                    className="text-blue-500 flex-shrink-0 mt-0.5"
+                  />
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    <span
+                      className="text-blue-500"
+                      style={{ fontWeight: 500 }}
+                    >
+                      Note:
+                    </span>{" "}
+                    This FigJam board was recreated for the
+                    portfolio. The original design work was done
+                    directly in Figma design files, which were used
+                    as our collaborative workspace (similar to how a
+                    FigJam board would be used). This board
+                    consolidates that work into an interactive,
+                    explorable format.
+                  </p>
                 </div>
+
+                <FigJamViewer
+                  fileKey={FITIFY_FIGJAM_FILE_KEY}
+                  fileName={FITIFY_FIGJAM_FILE_NAME}
+                  pages={FITIFY_FIGJAM_PAGES}
+                  accentColor="#3360EC"
+                  accentColorLight="#6B8AFF"
+                  accentBgAlpha="rgba(51,96,236,0.15)"
+                />
               </div>
 
               {/* What We Learned */}
