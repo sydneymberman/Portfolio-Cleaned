@@ -1,5 +1,24 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Info } from "lucide-react";
 import { useNavigate } from "react-router";
+import { motion } from "motion/react";
+import { Navigation } from "./Navigation";
+import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { FigJamViewer } from "./FigJamViewer";
+import type { FigJamPage } from "./FigJamViewer";
+import image_bb30b76d65d2f65f4582095fe5de44d53bb91e46 from "figma:asset/bb30b76d65d2f65f4582095fe5de44d53bb91e46.png";
+
+/* ── Fitify FigJam Board Configuration ── */
+const FITIFY_FIGJAM_FILE_KEY = "zTf0yJIuVP4JAp9ycVbtrB";
+const FITIFY_FIGJAM_FILE_NAME = "Fitify-Recreated-Board";
+const FITIFY_FIGJAM_PAGES: FigJamPage[] = [
+  { name: "Project Hub - Main",              nodeId: "0-1" },
+  { name: "Links/Clothes",                   nodeId: "2-4053" },
+  { name: "Crazy Eights",                    nodeId: "2-4442" },
+  { name: "Wireframes/Info Architecture",    nodeId: "3-4475" },
+  { name: "UI and Prototype",               nodeId: "3-7436" },
+  { name: "Style Sheet and Brand ID",       nodeId: "3-13493" },
+  { name: "Logo Ideation (my drawings)",     nodeId: "3-4749" },
+];
 
 export function CaseStudyFitify() {
   const navigate = useNavigate();
@@ -240,6 +259,39 @@ export function CaseStudyFitify() {
               <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed mb-12">
                 I conducted user interviews with 25 online shoppers and analyzed competitor solutions to understand pain points and opportunities.
               </p>
+
+              {/* Interactive FigJam Board */}
+              <div className="mb-16">
+                <h3 className="text-2xl mb-4 text-gray-900 dark:text-white" style={{ fontWeight: 600 }}>
+                  Design Process Board
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Explore the full design process interactively below — from research and ideation through wireframes, branding, and final UI. Pan, zoom, and navigate through each section of the board.
+                </p>
+
+                {/* Recreated note */}
+                <div
+                  className="flex items-start gap-3 mb-6 rounded-xl px-5 py-4"
+                  style={{
+                    background: "rgba(236,72,153,0.06)",
+                    border: "1px solid rgba(236,72,153,0.15)",
+                  }}
+                >
+                  <Info size={18} className="text-pink-500 dark:text-pink-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                    <span className="text-pink-600 dark:text-pink-400" style={{ fontWeight: 500 }}>Note:</span> This FigJam board was recreated for the portfolio. The original design work was done directly in Figma design files, which were used as our collaborative workspace (similar to how a FigJam board would be used). This board consolidates that work into an interactive, explorable format.
+                  </p>
+                </div>
+
+                <FigJamViewer
+                  fileKey={FITIFY_FIGJAM_FILE_KEY}
+                  fileName={FITIFY_FIGJAM_FILE_NAME}
+                  pages={FITIFY_FIGJAM_PAGES}
+                  accentColor="#ec4899"
+                  accentColorLight="#f9a8d4"
+                  accentBgAlpha="rgba(236,72,153,0.15)"
+                />
+              </div>
 
               <div className="space-y-6">
                 <div className="bg-white/70 dark:bg-zinc-900/50 backdrop-blur-lg rounded-2xl border border-white/30 dark:border-white/10 shadow-md dark:shadow-none p-8">
