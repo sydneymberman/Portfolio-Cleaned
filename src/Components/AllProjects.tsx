@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import embodyLogo from "figma:asset/382fb7e43884845be7f31dd981c53da8724aac62.png";
+import embodyImage from "figma:asset/5ae3c122e1f2e7f4381ce2d7577a200629073671.png";
+import FitifyImage from "figma:asset/1a1c438a0f4c04d8941e484906b7065a007af225.png";
 
 const allProjects = [
   {
@@ -10,8 +12,7 @@ const allProjects = [
     description:
       "AI-powered fashion try-on app that lets users virtually try on clothing from top brands. Features include style recommendations, size matching, and seamless shopping integration.",
     category: "UX/UI Design",
-    image:
-      "https://images.unsplash.com/photo-1658274474930-bb27a64022c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb2RpbmclMjBsYXB0b3AlMjBzY3JlZW58ZW58MXx8fHwxNzU5NzIxMjc3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image:FitifyImage,
     year: "2024",
     tags: ["UX Design", "Mobile App", "AI", "E-commerce"],
     link: "/projects/fitify",
@@ -21,8 +22,7 @@ const allProjects = [
     description:
       "AI-powered health monitoring system for PCOS. Hydrogel patches collect biomarkers while the app provides personalized cycle tracking, symptom management, and predictive insights",
     category: "Product Design, UX Design",
-    image:
-      "https://images.unsplash.com/photo-1658274474930-bb27a64022c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb2RpbmclMjBsYXB0b3AlMjBzY3JlZW58ZW58MXx8fHwxNzU5NzIxMjc3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: embodyImage,
     year: "2025",
     tags: ["Product Design", "UX Design", "Healthcare", "AI"],
     link: "/projects/embody",
