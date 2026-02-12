@@ -1,4 +1,5 @@
-import { motion } from "motion/react";
+import * as motionReact from "motion/react";
+const { motion } = motionReact;
 import { Navigation } from "./Navigation";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router";
